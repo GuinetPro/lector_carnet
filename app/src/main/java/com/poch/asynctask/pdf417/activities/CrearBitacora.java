@@ -1,13 +1,17 @@
 package com.poch.asynctask.pdf417.activities;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import android.os.Handler;
+
+
+import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
@@ -27,19 +31,31 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.JsonHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
 import com.poch.asynctask.pdf417.R;
 import com.poch.asynctask.pdf417.adapters.BitacoraAdapter;
 import com.poch.asynctask.pdf417.adapters.VisitaAdapter;
 import com.poch.asynctask.pdf417.models.Bitacora;
 import com.poch.asynctask.pdf417.models.Visita;
+import com.poch.asynctask.pdf417.models.VisitaRealm;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
+import cz.msebera.android.httpclient.Header;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmResults;
@@ -47,19 +63,22 @@ import io.realm.RealmResults;
 /**
  * Created by ricardo.gutierrez on 18-01-2016.
  */
-public class CrearBitacora extends AppCompatActivity {
+public class CrearBitacora extends ActionBarActivity {
 
 
     private ImageButton btnvisitas;
     private List<Visita> visitaList;
     private VisitaAdapter  adapter;
     private ListView list;
-    private EditText fecha_ingreso,motivo;
+    private EditText fecha_ingreso,motivo,nombre;
     private Button crearBitacora;
+    private static final String  SERVER = "http://www.pochrider.cl/bitacora_servidores/";
 
     private Toolbar toolbar;
 
     ArrayList<Visita> visitaList2 = new ArrayList<Visita>();
+
+    private Realm realm;
 
 
     @Override
@@ -67,6 +86,7 @@ public class CrearBitacora extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_crear_bitacora);
         setTitle("Crear Bitacora");
+        realm = Realm.getInstance(this);
 
 
         toolbar = (Toolbar) findViewById( R.id.toolbar );
@@ -78,11 +98,19 @@ public class CrearBitacora extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
 
+        SharedPreferences sp = getSharedPreferences("userData", Context.MODE_PRIVATE);
+
+
+
+
         toolbar = (Toolbar) findViewById( R.id.toolbar );
         btnvisitas = (ImageButton)findViewById( R.id.visitas );
-        fecha_ingreso = (EditText)findViewById( R.id.fecha_ingreso );
+
         crearBitacora = (Button)findViewById( R.id.buttonEnviar );
+
+        nombre = (EditText)findViewById( R.id.nombre );
         motivo =  (EditText)findViewById( R.id.motivo );
+        fecha_ingreso = (EditText)findViewById( R.id.fecha_ingreso );
 
         visitaList = new ArrayList<Visita>();
 
@@ -96,9 +124,8 @@ public class CrearBitacora extends AppCompatActivity {
 
         String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(Calendar.getInstance().getTime());
 
-
-
         fecha_ingreso.setText(timeStamp);
+        nombre.setText(sp.getString("nombre",""));
 
         btnvisitas.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -131,6 +158,7 @@ public class CrearBitacora extends AppCompatActivity {
                                     return;
                                 } else {
                                     visitaList2.add(new Visita(nombre.getText().toString(), rut.getText().toString()));
+
                                     adapter.notifyDataSetChanged();
                                     getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
                                 }
@@ -158,17 +186,147 @@ public class CrearBitacora extends AppCompatActivity {
             @Override
             public void onClick(View v) {
 
-                //motivo.getText().toString();
-                //guardamos la bitacora
-                
+
+                DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm");
+
+                String timeStamp = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(Calendar.getInstance().getTime());
 
 
+
+                realm.beginTransaction();
+
+                String uid = UUID.randomUUID().toString();
+                Bitacora bit = new Bitacora();
+                bit.setId(uid);
+                bit.setMotivo(motivo.getText().toString());
+                bit.setFechaIngreso(fecha_ingreso.getText().toString());
+                bit.setFechaSalida(timeStamp);
+                bit.setNombrePersona(nombre.getText().toString());
+
+                realm.copyToRealmOrUpdate(bit);
+
+                for( Visita vi : visitaList2){
+
+                    VisitaRealm visitaBueva = new VisitaRealm();
+                    visitaBueva.setId(UUID.randomUUID().toString());
+                    visitaBueva.setBitacoraId(uid);
+                    visitaBueva.setNombre(vi.getNombre());
+                    visitaBueva.setRut(vi.getRut());
+                    realm.copyToRealmOrUpdate(visitaBueva);
+                }
+
+                realm.commitTransaction();
+                realm.close();
+
+                /* enviamos los datos al servidor */
+                EnviarDatosBitacoraServidor(bit, visitaList2);
+
+                // Use the AlertDialog.Builder to configure the AlertDialog.
+                AlertDialog.Builder alertDialogBuilder =
+                        new AlertDialog.Builder(CrearBitacora.this)
+                                .setTitle("Mensaje de la Aplicacion")
+                                .setMessage("Bitacora creada con exito");
+
+
+                AlertDialog alertDialog = alertDialogBuilder.show();
+
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    public void run() {
+                        Intent i2 = new Intent(CrearBitacora.this,ListaBitacora.class);
+                        startActivity(i2);
+                        finish();
+                    }
+                }, 3000);
 
             }
         });
 
+    }
+
+
+    public void EnviarDatosBitacoraServidor( Bitacora bitacora,ArrayList<Visita> listaVisitas ){
+
+
+        AsyncHttpClient client = new AsyncHttpClient();
+        client.setEnableRedirects(true);
+
+        RequestParams data = new RequestParams();
+        data.put("fecha_ingreso", bitacora.getFechaIngreso());
+        data.put("fecha_salida", bitacora.getFechaSalida());
+        data.put("motivo", bitacora.getMotivo());
+        data.put("encargado", bitacora.getNombrePersona());
+        data.put("id", bitacora.getId());
+
+
+        List<Map<String, String>> listVisitas = new ArrayList<Map<String,
+                String>>();
+
+        for( Visita vi : visitaList2){
+
+            Map<String, String> user1 = new HashMap<String, String>();
+            user1.put("nombre", vi.getNombre());
+            user1.put("rut", vi.getRut());
+            user1.put("bitacora_id", bitacora.getId());
+            listVisitas.add(user1);
+        }
+
+
+        data.put("visitas",listVisitas);
+
+        client.post(SERVER + "api/bitacora/create", data, new JsonHttpResponseHandler() {
+
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                try {
+
+                    String m = response.getString("message");
+
+                    boolean success = response.getBoolean("success");
+
+                    Log.v("respuesta",response.getString("visitas"));
+
+                    /* exitoso pasamos a estado sincronuizado */
+                    if (success) {
+
+
+                    }
+
+                } catch (JSONException e) {
+
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, String responseString, Throwable t) {
+
+            }
+
+            @Override
+            public void onProgress(long bytesWritten, long totalSize) {
+
+
+                int totProgress = (int) (((float) bytesWritten * 100) / totalSize);
+
+
+                if (totProgress >= 100) {
+
+
+
+                }
+
+            }
+
+        });
+
 
     }
+
+    public void  EnviarDatosVisitasServidor(ArrayList<Visita> listaVisitas ){
+
+    }
+
 
 
     @Override
@@ -181,6 +339,37 @@ public class CrearBitacora extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
+        switch (item.getItemId()) {
+
+            case R.id.action_settings:
+
+                SharedPreferences preferencias = getSharedPreferences("userData", Context.MODE_PRIVATE);;
+                SharedPreferences.Editor editor=  preferencias.edit();
+                editor.putString("rut", "");
+                editor.apply();
+
+
+                Intent i = new Intent(this,MainActivity.class);
+                startActivity(i);
+                finish();
+                break;
+            default:
+                onBackPressed();
+                break;
+
+        }
+
         return super.onOptionsItemSelected(item);
     }
+
+
+    @Override
+    public void onBackPressed() {
+
+        Intent i2 = new Intent(this,ListaBitacora.class);
+        startActivity(i2);
+        finish();
+    }
+
+
 }

@@ -22,7 +22,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         style="@android:style/Widget.Button"
-        android:text="Crear Visita"
+        android:text="Crear Bitacora"
         android:layout_marginTop="15dp"/>
 
 

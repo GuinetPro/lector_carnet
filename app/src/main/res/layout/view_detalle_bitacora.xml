@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:id="@+id/layout1"
+    android:background="#FFFFFF"
+    >
+
+
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        tools:context=".CameraPhotoCapture"
+        android:layout_marginTop="10dp"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        >
+        <TextView
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:text="Fecha Ingreso:"
+            android:textColor="#000"
+            android:id="@+id/fecha_ingreso_label"
+            android:layout_marginTop="10dp"
+
+            />
+
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/fecha_ingreso"
+            android:layout_toRightOf="@+id/fecha_ingreso_label"
+            android:layout_marginBottom="5dp"
+            android:editable="false"
+            android:inputType="none"/>
+
+    </RelativeLayout>
+
+
+
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        tools:context=".CameraPhotoCapture"
+        android:layout_marginTop="10dp"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        >
+        <TextView
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:text="Salida:"
+            android:textColor="#000"
+            android:id="@+id/fecha_salida_label"
+            android:layout_marginTop="10dp"
+
+            />
+
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/salida"
+            android:layout_toRightOf="@+id/fecha_salida_label"
+            android:layout_marginBottom="5dp"
+            android:editable="false"
+            android:inputType="none"/>
+
+    </RelativeLayout>
+
+
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        tools:context=".CameraPhotoCapture"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp">
+
+        <TextView
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:text="Nombre:"
+            android:id="@+id/nombre_ingreso_label"
+            android:textColor="#000"
+            android:layout_marginTop="10dp"
+            />
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/nombre_visita"
+            android:textColor="#000"
+            android:layout_toRightOf="@+id/nombre_ingreso_label"
+            android:layout_marginBottom="5dp"
+            android:editable="false"
+            android:inputType="none"/>
+    </RelativeLayout>
+
+
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        tools:context=".CameraPhotoCapture"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Motivo:"
+            android:id="@+id/motivo_ingreso_label"
+            android:textColor="#000"
+            />
+
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/motivo"
+            android:layout_weight="0.78"
+            android:textColor="#000"
+            android:layout_below="@+id/motivo_ingreso_label"
+            android:height="120dp"
+            android:layout_marginBottom="5dp"
+            android:editable="false"
+            android:inputType="none"
+            />
+
+
+    </RelativeLayout>
+
+
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        tools:context=".CameraPhotoCapture"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp">
+
+
+        <TextView
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:text="Visitas:"
+            android:textColor="#000"
+            android:id="@+id/label_visitas"
+            android:layout_marginTop="15dp"
+            />
+
+
+        <ScrollView
+
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:orientation="vertical"
+            android:layout_below="@+id/label_visitas"
+            android:paddingTop="10dp"
+            android:fillViewport="true"
+            android:gravity="top"
+            >
+
+            <ListView
+                android:id="@+id/listView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_alignParentLeft="true"
+                android:layout_below="@+id/visitas" >
+
+
+
+
+            </ListView>
+        </ScrollView>
+
+    </RelativeLayout>
+
+</LinearLayout>

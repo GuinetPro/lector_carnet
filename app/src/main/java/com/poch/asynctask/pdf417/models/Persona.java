@@ -3,16 +3,28 @@ package com.poch.asynctask.pdf417.models;
 import java.util.Date;
 
 import io.realm.RealmObject;
+import io.realm.annotations.PrimaryKey;
 
 /**
  * Created by ricardo.gutierrez on 18-01-2016.
  */
 public class Persona extends RealmObject {
 
+    @PrimaryKey
     private String id;
+
     private String nombre;
-    private Date cargo;
+    private String cargo;
     private  String area;
+    private String rut;
+
+    public String getRut() {
+        return rut;
+    }
+
+    public void setRut(String rut) {
+        this.rut = rut;
+    }
 
     public String getId() {
         return id;
@@ -30,11 +42,11 @@ public class Persona extends RealmObject {
         this.area = area;
     }
 
-    public Date getCargo() {
+    public String getCargo() {
         return cargo;
     }
 
-    public void setCargo(Date cargo) {
+    public void setCargo(String cargo) {
         this.cargo = cargo;
     }
 

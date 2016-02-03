@@ -1,13 +1,18 @@
 package com.poch.asynctask.pdf417.activities;
 
+import android.app.AlertDialog;
 import android.content.ComponentName;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.nfc.Tag;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
+
+import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,7 +23,11 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.microblink.activity.Pdf417ScanActivity;
 import com.microblink.recognizers.BaseRecognitionResult;
@@ -38,15 +47,21 @@ import com.microblink.results.barcode.BarcodeDetailedData;
 import com.microblink.util.Log;
 import com.microblink.view.recognition.RecognizerView;
 import com.poch.asynctask.pdf417.R;
+import com.poch.asynctask.pdf417.models.Bitacora;
+import com.poch.asynctask.pdf417.models.Persona;
+import com.poch.asynctask.pdf417.models.Visita;
 
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import io.realm.Realm;
 
 
-import android.hardware.fingerprint.FingerprintManager;
-import android.widget.Toast;
-
-public class MainActivity extends AppCompatActivity  {
+public class MainActivity extends ActionBarActivity {
 
 
 
@@ -59,10 +74,27 @@ public class MainActivity extends AppCompatActivity  {
 
     private static final String TAG = "Pdf417MobiDemo";
 
+
+    private SharedPreferences sp ;
+
+
+    private Realm realm;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        realm = Realm.getInstance(this);
+        sp = getSharedPreferences("userData", Context.MODE_PRIVATE);
+
+        if(   sp.contains("rut")  && !TextUtils.isEmpty(sp.getString("rut",""))   ){
+
+            Intent intent = new Intent(MainActivity.this, ListaBitacora.class);
+            startActivity(intent);
+            finish();
+        }
+
     }
 
     /**
@@ -184,7 +216,11 @@ public class MainActivity extends AppCompatActivity  {
 
         // if you want Pdf417ScanActivity to display rectangle where camera is focusing,
         // add following extra to intent
-        intent.putExtra(Pdf417ScanActivity.EXTRAS_SHOW_FOCUS_RECTANGLE, true);
+        //intent.putExtra(Pdf417ScanActivity.EXTRAS_SHOW_FOCUS_RECTANGLE, true);
+
+
+        // disable showing of dialog after scan
+        intent.putExtra(Pdf417ScanActivity.EXTRAS_SHOW_DIALOG_AFTER_SCAN, false);
 
         // if you want to use camera fit aspect mode to letterbox the camera preview inside
         // available activity space instead of cropping camera frame (default), add following
@@ -227,125 +263,291 @@ public class MainActivity extends AppCompatActivity  {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-        if (requestCode == MY_REQUEST_CODE && resultCode == Pdf417ScanActivity.RESULT_OK) {
-            // First, obtain recognition result
-
-/*
-            Toast.makeText(MainActivity.this, "Hey aqui estoy!!! =)",
-                    Toast.LENGTH_LONG).show();
-*/
-
-            RecognitionResults results = data.getParcelableExtra(Pdf417ScanActivity.EXTRAS_RECOGNITION_RESULTS);
-            // Get scan results array. If scan was successful, array will contain at least one element.
-            // Multiple element may be in array if multiple scan results from single image were allowed in settings.
-            BaseRecognitionResult[] resultArray = results.getRecognitionResults();
-
-            // Each recognition result corresponds to active recognizer. As stated earlier, there are 4 types of
-            // recognizers available (PDF417, Bardecoder, ZXing and USDL), so there are 4 types of results
-            // available.
 
 
+        final SharedPreferences.Editor editor = sp.edit();
+        RecognitionResults results = data.getParcelableExtra(Pdf417ScanActivity.EXTRAS_RECOGNITION_RESULTS);
+        // Get scan results array. If scan was successful, array will contain at least one element.
+        // Multiple element may be in array if multiple scan results from single image were allowed in settings.
+        BaseRecognitionResult[] resultArray = results.getRecognitionResults();
 
-            StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder();
 
-            for(BaseRecognitionResult res : resultArray) {
-                if(res instanceof Pdf417ScanResult) { // check if scan result is result of Pdf417 recognizer
-                    Pdf417ScanResult result = (Pdf417ScanResult) res;
-                    // getStringData getter will return the string version of barcode contents
-                    String barcodeData = result.getStringData();
-                    // isUncertain getter will tell you if scanned barcode contains some uncertainties
-                    boolean uncertainData = result.isUncertain();
-                    // getRawData getter will return the raw data information object of barcode contents
-                    BarcodeDetailedData rawData = result.getRawData();
-                    // BarcodeDetailedData contains information about barcode's binary layout, if you
-                    // are only interested in raw bytes, you can obtain them with getAllData getter
-                    byte[] rawDataBuffer = rawData.getAllData();
+        for(BaseRecognitionResult res : resultArray) {
+            if(res instanceof Pdf417ScanResult) { // check if scan result is result of Pdf417 recognizer
 
-                    // if data is URL, open the browser and stop processing result
-                    if(checkIfDataIsUrlAndCreateIntent(barcodeData)) {
-                        return;
-                    } else {
-                        // add data to string builder
-                        //sb.append("PDF417 scan data");
-                        if (uncertainData) {
-                           // sb.append("This scan data is uncertain!\n\n");
-                        }
-                      //  sb.append(" string data:\n");
-                        sb.append(barcodeData);
-                        if (rawData != null) {
-                            sb.append("\n\n");
-                        //    sb.append("PDF417 raw data:\n");
-                           // sb.append(rawData.toString());
-                            //sb.append("\n");
-                          //  sb.append("PDF417 raw data merged:\n");
-                            /*sb.append("{");
-                            for (int i = 0; i < rawDataBuffer.length; ++i) {
-                                sb.append((int) rawDataBuffer[i] & 0x0FF);
-                                if (i != rawDataBuffer.length - 1) {
-                                    sb.append(", ");
-                                }
-                            }
-                            sb.append("}\n\n\n");*/
-                        }
+
+                Pdf417ScanResult result = (Pdf417ScanResult) res;
+                // getStringData getter will return the string version of barcode contents
+                String barcodeData = result.getStringData();
+                // isUncertain getter will tell you if scanned barcode contains some uncertainties
+                boolean uncertainData = result.isUncertain();
+                // getRawData getter will return the raw data information object of barcode contents
+                BarcodeDetailedData rawData = result.getRawData();
+                // BarcodeDetailedData contains information about barcode's binary layout, if you
+                // are only interested in raw bytes, you can obtain them with getAllData getter
+                byte[] rawDataBuffer = rawData.getAllData();
+
+                // if data is URL, open the browser and stop processing result
+                if(checkIfDataIsUrlAndCreateIntent(barcodeData)) {
+                    return;
+                } else {
+                    // add data to string builder
+                    //sb.append("PDF417 scan data");
+                    if (uncertainData) {
+                        // sb.append("This scan data is uncertain!\n\n");
                     }
-                } else if(res instanceof BarDecoderScanResult) { // check if scan result is result of BarDecoder recognizer
-                    BarDecoderScanResult result = (BarDecoderScanResult) res;
-                    // with getBarcodeType you can obtain barcode type enum that tells you the type of decoded barcode
-                    BarcodeType type = result.getBarcodeType();
-                    // as with PDF417, getStringData will return the string contents of barcode
-                    String barcodeData = result.getStringData();
-                    if(checkIfDataIsUrlAndCreateIntent(barcodeData)) {
-                        return;
-                    } else {
-                        sb.append(type.name());
-                        sb.append(" string data:\n");
-                        sb.append(barcodeData);
-                        sb.append("\n\n\n");
+                    //  sb.append(" string data:\n");
+                    sb.append(barcodeData);
+                    if (rawData != null) {
+                        sb.append("\n\n");
                     }
-                } else if(res instanceof ZXingScanResult) { // check if scan result is result of ZXing recognizer
-                    ZXingScanResult result= (ZXingScanResult) res;
-                    // with getBarcodeType you can obtain barcode type enum that tells you the type of decoded barcode
-                    BarcodeType type = result.getBarcodeType();
-                    // as with PDF417, getStringData will return the string contents of barcode
-                    String barcodeData = result.getStringData();
-                    if(checkIfDataIsUrlAndCreateIntent(barcodeData)) {
-                        return;
-                    } else {
-                        sb.append(type.name());
-                        sb.append(" string data:\n");
-                        sb.append(barcodeData);
-                        sb.append("\n\n\n");
-                    }
-                } else if(res instanceof USDLScanResult) { // check if scan result is result of US Driver's Licence recognizer
-                    USDLScanResult result = (USDLScanResult) res;
-
-                    // USDLScanResult can contain lots of information extracted from driver's licence
-                    // you can obtain information using the getField method with keys defined in
-                    // USDLScanResult class
-
-                    String name = result.getField(USDLScanResult.kCustomerFullName);
-                    Log.i(TAG, "Customer full name is " + name);
-
-                    sb.append(result.getTitle());
-                    sb.append("\n\n");
-                    sb.append(result.toString());
                 }
+
+
+
+                  /*
+            * Guardamos en peferencias el nombre d ela persona
+            * Como el nombre que se obtiene del carnet es solo el apellido damos al opcion de modifcar el nombre solo una vez
+            * si ya existe el rut simplemente pasara sin rpeguntar por cambio nombre
+            * */
+
+
+
+
+                String[] splited = sb.toString().split("\\s");
+                String nombre = "";
+                String rut = "";
+
+                for (int x=0;x<splited.length;x++){
+
+                    if (x == 1) {
+                        nombre =  splited[x].replaceAll("[^a-zA-Z0-9]", "");
+                    }
+                    if (x == 0) {
+                        rut = splited[x].replaceAll("[^a-zA-Z0-9]", "");
+                        editor.putString("rut",  rut.substring(0, 9) );
+                        editor.apply();
+                    }
+
+
+                }
+
+                nombre =nombre.split("CHL")[0];
+
+                Persona per =realm.where(Persona.class)
+                        .equalTo("rut", rut.substring(0, 9))
+                        .findFirst();
+
+
+                if( per == null ){
+
+                    LayoutInflater layoutInflater = LayoutInflater.from(MainActivity.this);
+
+
+                    View promptView = layoutInflater.inflate(R.layout.form_nombre, null);
+
+                    AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
+
+                    final EditText nombreActual = (EditText) promptView.findViewById(R.id.nombre);
+
+                    final String rutCurrent = rut.substring(0, 9);
+
+                    nombreActual.setText(nombre);
+
+                    nombreActual.requestFocus();
+
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY);
+
+                    alertDialogBuilder.setView(promptView);
+                    // setup a dialog window
+                    alertDialogBuilder
+                            .setTitle("Modificar Nombre")
+                            .setCancelable(false)
+
+                            .setPositiveButton("Guardar", new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int id) {
+
+                                    // Guardamos en al abse de datos para no teenr que preguntar de nnuevo
+                                    realm.beginTransaction();
+
+                                    String uid = UUID.randomUUID().toString();
+                                    Persona p = new Persona();
+                                    p.setId(uid);
+                                    p.setNombre(nombreActual.getText().toString());
+                                    p.setRut(rutCurrent);
+                                    realm.copyToRealmOrUpdate(p);
+                                    realm.commitTransaction();
+                                    realm.close();
+
+                                    editor.putString("nombre", nombreActual.getText().toString());
+                                    editor.apply();
+
+                                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                                    imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
+
+                                    Intent intent = new Intent(MainActivity.this, ListaBitacora.class);
+                                    startActivity(intent);
+                                    finish();
+                                }
+                            });
+
+
+                    // create an alert dialog
+                    AlertDialog alertD = alertDialogBuilder.create();
+                    alertD.show();
+
+
+                }else{
+
+                    editor.putString("nombre", nombre);
+                    editor.apply();
+
+                    Intent intent = new Intent(MainActivity.this, ListaBitacora.class);
+                    startActivity(intent);
+                    finish();
+                }
+
+
+
+            } else if(res instanceof BarDecoderScanResult) { // BarDecoder recognizer
+
+                Toast.makeText(MainActivity.this, "BarDecoder!!! =)",
+                        Toast.LENGTH_LONG).show();
+
+
+            } else if(res instanceof ZXingScanResult) { // resultado si es un qr de carnet nuevo
+
+
+                ZXingScanResult result= (ZXingScanResult) res;
+                // with getBarcodeType you can obtain barcode type enum that tells you the type of decoded barcode
+                BarcodeType type = result.getBarcodeType();
+
+                String barcodeData = result.getStringData();
+
+
+                try {
+                    Map<String, String> map =  getQueryMap(barcodeData);
+
+
+                    editor.putString("rut",  map.get("RUN") );
+                    editor.apply();
+
+
+                    Persona per =realm.where(Persona.class)
+                            .equalTo("rut", map.get("RUN"))
+                            .findFirst();
+
+
+                    if( per == null ){
+
+                        LayoutInflater layoutInflater = LayoutInflater.from(MainActivity.this);
+
+
+                        View promptView = layoutInflater.inflate(R.layout.form_nombre, null);
+
+                        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
+
+                        final EditText nombreActual = (EditText) promptView.findViewById(R.id.nombre);
+
+                        final String rutCurrent = map.get("RUN");
+
+                        nombreActual.setText("");
+
+                        nombreActual.requestFocus();
+
+                        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                        imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY);
+
+                        alertDialogBuilder.setView(promptView);
+                        // setup a dialog window
+                        alertDialogBuilder
+                                .setTitle("Modificar Nombre")
+                                .setCancelable(false)
+
+                                .setPositiveButton("Guardar", new DialogInterface.OnClickListener() {
+                                    public void onClick(DialogInterface dialog, int id) {
+
+                                        // Guardamos en al abse de datos para no teenr que preguntar de nnuevo
+                                        realm.beginTransaction();
+
+                                        String uid = UUID.randomUUID().toString();
+                                        Persona p = new Persona();
+                                        p.setId(uid);
+                                        p.setNombre(nombreActual.getText().toString());
+                                        p.setRut(rutCurrent);
+                                        realm.copyToRealmOrUpdate(p);
+                                        realm.commitTransaction();
+                                        realm.close();
+
+                                        editor.putString("nombre", nombreActual.getText().toString());
+                                        editor.apply();
+
+                                        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                                        imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
+
+                                        Intent intent = new Intent(MainActivity.this, ListaBitacora.class);
+                                        startActivity(intent);
+                                        finish();
+                                    }
+                                });
+
+
+                        // create an alert dialog
+                        AlertDialog alertD = alertDialogBuilder.create();
+                        alertD.show();
+
+
+                    }else{
+
+                        Intent intent = new Intent(MainActivity.this, ListaBitacora.class);
+                        startActivity(intent);
+                        finish();
+                    }
+
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+
+
+            } else if(res instanceof USDLScanResult) { //   US Driver's Licence recognizer
+                Toast.makeText(MainActivity.this, " US Driver!!! =)",
+                        Toast.LENGTH_LONG).show();
             }
-           /*
-            Intent intent = new Intent(Intent.ACTION_SEND);
-            intent.setType("text/plain");
-            intent.putExtra(Intent.EXTRA_TEXT, sb.toString());
-            startActivity(Intent.createChooser(intent, "Use with"));
-
-            */
-
-            Intent intent = new Intent(MainActivity.this,ListaBitacora.class);
-            intent.setType("text/plain");
-            intent.putExtra("datos", sb.toString());
-            startActivity(intent);
-
         }
     }
 
 
+
+    @Override
+    protected void onPause() {
+        // TODO Auto-generated method stub
+        super.onPause();
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
+    }
+
+
+
+    private Map<String, String> getQueryMap(String query) throws UnsupportedEncodingException, Exception {
+        String s = query;
+
+        URL aURL = new URL(s);
+
+        String[] params = aURL.getQuery().split("&");
+
+        Map<String, String> map = new HashMap<String, String>();
+
+        for (String param : params){
+
+            String name = param.split("=")[0];
+            String value = param.split("=")[1];
+            map.put(name, value);
+
+        }
+        return map;
+    }
 }

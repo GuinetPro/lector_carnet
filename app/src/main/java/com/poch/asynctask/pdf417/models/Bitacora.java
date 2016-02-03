@@ -3,33 +3,41 @@ package com.poch.asynctask.pdf417.models;
 import java.util.Date;
 
 import io.realm.RealmObject;
+import io.realm.annotations.PrimaryKey;
 
 /**
  * Created by ricardo.gutierrez on 18-01-2016.
  */
 public class Bitacora extends RealmObject {
 
+    @PrimaryKey
     private String id;
-    private Date fechaIngreso;
-    private Date fechaSalida;
+
+    private String nombrePersona;
+    private String fechaIngreso;
+    private String fechaSalida;
     private  String motivo;
-    private int personaId;
+    private boolean sync = false;
 
-    public String getId() {
-        return id;
+    public boolean isSync() {
+        return sync;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setSync(boolean sync) {
+        this.sync = sync;
     }
 
-    public int getPersonaId() {
-        return personaId;
+    public String getNombrePersona() {
+        return nombrePersona;
     }
 
-    public void setPersonaId(int personaId) {
-        this.personaId = personaId;
+    public void setNombrePersona(String nombrePersona) {
+        this.nombrePersona = nombrePersona;
     }
+
+    public String getId() {return id;}
+
+    public void setId(String id) {this.id = id;}
 
     public String getMotivo() {
         return motivo;
@@ -39,19 +47,19 @@ public class Bitacora extends RealmObject {
         this.motivo = motivo;
     }
 
-    public Date getFechaSalida() {
+    public String getFechaSalida() {
         return fechaSalida;
     }
 
-    public void setFechaSalida(Date fechaSalida) {
+    public void setFechaSalida(String fechaSalida) {
         this.fechaSalida = fechaSalida;
     }
 
-    public Date getFechaIngreso() {
+    public String getFechaIngreso() {
         return fechaIngreso;
     }
 
-    public void setFechaIngreso(Date fechaIngreso) {
+    public void setFechaIngreso(String fechaIngreso) {
         this.fechaIngreso = fechaIngreso;
     }
 }

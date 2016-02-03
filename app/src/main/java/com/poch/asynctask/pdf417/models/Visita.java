@@ -2,13 +2,16 @@ package com.poch.asynctask.pdf417.models;
 
 import java.util.Date;
 
+import io.realm.annotations.PrimaryKey;
+
 /**
  * Created by ricardo.gutierrez on 21-01-2016.
  */
 public class Visita {
 
-    private String id;
+
     private  String nombre;
+
     private String  rut;
 
 
@@ -17,13 +20,11 @@ public class Visita {
         this.rut = rut;
     }
 
-    public String getId() {
-        return id;
+    public Visita() {
+
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+
 
     public String getRut() {
         return rut;
@@ -40,4 +41,6 @@ public class Visita {
     public void setNombre(String nombre) {
         this.nombre = nombre;
     }
+
+
 }

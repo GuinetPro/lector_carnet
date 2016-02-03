@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    tools:context=".CameraPhotoCapture"
+    android:layout_marginTop="20dp"
+    >
+
+
+    <TextView
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/nombre_visita"
+        android:layout_toRightOf="@+id/fecha_ingreso_label"
+        android:layout_marginBottom="5dp"
+        android:hint="Nombre"
+        android:paddingTop="20dp"
+
+        />
+
+
+    <TextView
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/rut"
+        android:layout_toRightOf="@+id/nombre_visita"
+        android:layout_marginBottom="5dp"
+        android:hint="Rut"
+        android:paddingTop="20dp"
+
+
+        />
+
+</RelativeLayout>

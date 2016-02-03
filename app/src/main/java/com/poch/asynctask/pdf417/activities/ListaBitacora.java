@@ -5,7 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+
+import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -29,7 +30,7 @@ import io.realm.RealmResults;
 /**
  * Created by ricardo.gutierrez on 18-01-2016.
  */
-public class ListaBitacora extends AppCompatActivity {
+public class ListaBitacora extends ActionBarActivity {
 
     public static RecyclerView recyclerView;
     public static Realm realm ;
@@ -74,26 +75,6 @@ public class ListaBitacora extends AppCompatActivity {
         recyclerView.setItemAnimator(new DefaultItemAnimator());
 
 
-        Bundle extras = getIntent().getExtras();
-
-        String value = extras.getString("datos");
-
-        datos.setText(value);
-
-        String[] splited = value.split("\\s");
-
-
-        for (int x=0;x<splited.length;x++){
-            Log.v("data", "[" + x + "] " + splited[x].replaceAll("[^a-zA-Z0-9]", ""));
-
-            if (x == 1) {
-                editor.putString("nombre", splited[x].replaceAll("[^a-zA-Z0-9]", "") );
-                editor.apply();
-            }
-
-
-        }
-
         btnAgregar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -104,6 +85,12 @@ public class ListaBitacora extends AppCompatActivity {
 
             }
         });
+
+
+        toolbar = (Toolbar) findViewById( R.id.toolbar );
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
+        getSupportActionBar().setHomeButtonEnabled(true);
 
 
     }
@@ -119,6 +106,28 @@ public class ListaBitacora extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+
+
+        switch (item.getItemId()) {
+
+            case R.id.action_settings:
+
+                SharedPreferences preferencias = getSharedPreferences("userData", Context.MODE_PRIVATE);;
+                SharedPreferences.Editor editor=  preferencias.edit();
+                editor.putString("rut", "");
+                editor.apply();
+
+
+                Intent i = new Intent(this,MainActivity.class);
+                startActivity(i);
+                finish();
+                break;
+            default:
+                onBackPressed();
+                break;
+
+        }
+
 
         return super.onOptionsItemSelected(item);
     }
